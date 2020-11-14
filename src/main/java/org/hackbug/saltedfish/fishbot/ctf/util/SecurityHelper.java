@@ -20,4 +20,13 @@ public class SecurityHelper {
 		}
 		return true;
 	}
+
+	public static boolean isLegalGroup(long qq) {
+		for (long id : availableGroup) {
+			if (id == qq) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

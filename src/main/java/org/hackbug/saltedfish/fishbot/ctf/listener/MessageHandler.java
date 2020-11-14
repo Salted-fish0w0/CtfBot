@@ -14,14 +14,13 @@ import net.mamoe.mirai.message.GroupMessageEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.SingleMessage;
+import org.hackbug.saltedfish.fishbot.ctf.util.SecurityHelper;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 public class MessageHandler extends SimpleListenerHost {
-	private final List<Long> availableGroups = Arrays.asList(763416094L);
-
 	@EventHandler
 	public void onPrivateMessage(FriendMessageEvent event) {
 		User user = event.getSender();
@@ -32,7 +31,7 @@ public class MessageHandler extends SimpleListenerHost {
 	}
 	@EventHandler
 	public void onGroupMessage(GroupMessageEvent event) {
-		if (!availableGroups.contains(event.getGroup().getId())) {
+		if (!SecurityHelper.isLegalGroup(event.getGroup().getId())) {
 			event.getGroup().quit();
 			return;
 		}
@@ -61,7 +60,7 @@ public class MessageHandler extends SimpleListenerHost {
 	}
 	@EventHandler
 	public void onGroupInvite(BotInvitedJoinGroupRequestEvent event) {
-		if (!availableGroups.contains(event.getGroupId())) {
+		if (!SecurityHelper.isLegalGroup(event.getGroupId())) {
 			event.ignore();
 		}
 		event.accept();
@@ -72,7 +71,7 @@ public class MessageHandler extends SimpleListenerHost {
 	}
 	@EventHandler
 	public void onGroupJoin(MemberJoinEvent event) {
-		if (!availableGroups.contains(event.getGroup().getId())) {
+		if (!SecurityHelper.isLegalGroup(event.getGroup().getId())) {
 			event.getGroup().quit();
 			return;
 		}

@@ -44,6 +44,9 @@ public class HttpServer extends NanoHTTPD {
 
 						return acceptUpload(UUID.fromString(session.getParameters().get("id").get(0)), header, session.getInputStream(), originalContentType.split(";")[1].split("=")[1]);
 					case "/":
+						if (session.getParameters().get("id") == null) {
+							return Response.newFixedLengthResponse(Status.OK, MIME_HTML, "无效的访问");
+						}
 						return Response.newFixedLengthResponse(Status.OK, MIME_HTML, ("<!DOCTYPE html>\n" +
 								"<html lang=\"en\">\n" +
 								"<head>\n" +
@@ -118,7 +121,12 @@ public class HttpServer extends NanoHTTPD {
 					continue;
 				}
 
-				File f = new File(new File(BotHolder.getConfig().getString("file-upload-folder")), cu.getQq() + "_" + fileItem.getName());
+				String name = fileItem.getName();
+				if (name.contains(File.pathSeparator)) {
+					return Response.newFixedLengthResponse(Status.FORBIDDEN, MIME_PLAINTEXT, "非法的上传文件名");
+				}
+
+				File f = new File(new File(BotHolder.getConfig().getString("file-upload-folder")), cu.getQq() + "_" + name);
 				fileItem.write(f);
 			}
 

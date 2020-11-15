@@ -54,10 +54,10 @@ public class MySQL {
 		try {
 			PreparedStatement ps = connection.prepareStatement("create table if not exists `user` (" +
 					"`id` int(64) not null auto_increment," +
-					"`qq` long not null unique," +
+					"`qq` bigint not null unique," +
 					"`operator` boolean," +
 					"`solving_puzzle` varchar(16) default null," +
-					"`solving_time` long default 0," +
+					"`solving_time` bigint default 0," +
 					"`file_uuid` varchar(64) not null," +
 					"`money` int default -1," + // i swear it will be used soon.
 					"primary key (id))engine=InnoDB default charset=UTF8;");
@@ -79,6 +79,7 @@ public class MySQL {
 					"`description` varchar(256) default null," +
 					"`type` varchar(8) not null," +
 					"`initialize_script` varchar(64) default null," +
+					"`post_initialize_script` varchar(64) default null," +
 					"`template_directory` varchar(64) default null," +
 					"`user_required_file` varchar(64) default null," +
 					"`user_file_script` varchar(64) default null," +
@@ -93,10 +94,10 @@ public class MySQL {
 			ps.executeUpdate();
 			ps = connection.prepareStatement("create table if not exists `log` (" +
 					"`id` int not null auto_increment," +
-					"`user_id` long not null," +
+					"`user_id` bigint not null," +
 					"`puzzle_title` varchar(16) not null," +
-					"`finished_time` long not null," +
-					"`time_spent` long not null," +
+					"`finished_time` bigint not null," +
+					"`time_spent` bigint not null," +
 					"primary key (id))engine=InnoDB default charset=UTF8;");
 			ps.executeUpdate();
 		} catch (Exception e) {
@@ -106,7 +107,7 @@ public class MySQL {
 
 	private void initStatements() {
 		try {
-			preparedStatements.put("putPuzzle", connection.prepareStatement("insert into puzzles (`title`,`type`,`description`,initialize_script,template_directory,user_required_file,user_file_script,`use_docker`,`image`) values (?,?,?,?,?,?,?,?,?);"));
+			preparedStatements.put("putPuzzle", connection.prepareStatement("insert into puzzles (`title`,`type`,`description`,initialize_script,post_initialize_script,template_directory,user_required_file,user_file_script,`use_docker`,`image`) values (?,?,?,?,?,?,?,?,?,?);"));
 			preparedStatements.put("getPuzzle", connection.prepareStatement("select * from puzzles where title=?;"));
 			preparedStatements.put("removePuzzle", connection.prepareStatement("delete from puzzles where title=?;"));
 			preparedStatements.put("getUser", connection.prepareStatement("select * from user where qq=?;"));
@@ -140,26 +141,31 @@ public class MySQL {
 		} else {
 			ps.setString(4, null);
 		}
-		if (puzzle.getFileToArchive() != null) {
-			ps.setString(5, puzzle.getFileToArchive().getAbsolutePath());
+		if (puzzle.getPostInitializeScriptFile() != null) {
+			ps.setString(5, puzzle.getPostInitializeScriptFile().getAbsolutePath());
 		} else {
 			ps.setString(5, null);
 		}
-		if (puzzle.getUserRequiredFileName() != null) {
-			ps.setString(6, puzzle.getUserRequiredFileName());
+		if (puzzle.getFileToArchive() != null) {
+			ps.setString(6, puzzle.getFileToArchive().getAbsolutePath());
 		} else {
 			ps.setString(6, null);
 		}
-		if (puzzle.getUserFileModificationScriptFile() != null) {
-			ps.setString(7, puzzle.getUserFileModificationScriptFile().getAbsolutePath());
+		if (puzzle.getUserRequiredFileName() != null) {
+			ps.setString(7, puzzle.getUserRequiredFileName());
 		} else {
 			ps.setString(7, null);
 		}
-		ps.setBoolean(8, puzzle.doUseDocker());
-		if (puzzle.getDockerImage() != null) {
-			ps.setString(9, puzzle.getDockerImage());
+		if (puzzle.getUserFileModificationScriptFile() != null) {
+			ps.setString(8, puzzle.getUserFileModificationScriptFile().getAbsolutePath());
 		} else {
-			ps.setString(9, null);
+			ps.setString(8, null);
+		}
+		ps.setBoolean(9, puzzle.doUseDocker());
+		if (puzzle.getDockerImage() != null) {
+			ps.setString(10, puzzle.getDockerImage());
+		} else {
+			ps.setString(10, null);
 		}
 		ps.executeUpdate();
 	}
@@ -171,7 +177,7 @@ public class MySQL {
 		if (!rs.first()) {
 			return null;
 		}
-		return new Puzzle(rs.getString("title"), rs.getString("type"), rs.getString("description"), rs.getString("template_directory"), rs.getString("initialize_script"), rs.getString("user_required_file"), rs.getString("user_file_script"), rs.getBoolean("use_docker"), rs.getString("image"));
+		return new Puzzle(rs.getString("title"), rs.getString("type"), rs.getString("description"), rs.getString("template_directory"), rs.getString("initialize_script"), rs.getString("post_initialize_script"), rs.getString("user_required_file"), rs.getString("user_file_script"), rs.getBoolean("use_docker"), rs.getString("image"));
 	}
 
 	public CtfUser getUser(long qq) throws Exception {

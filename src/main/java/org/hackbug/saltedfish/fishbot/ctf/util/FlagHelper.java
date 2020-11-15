@@ -46,7 +46,8 @@ public class FlagHelper {
 			"原来当黑客特别吸引同性",
 			"#肖战联合火星人暗中操作美国大选#",
 			"WE WILL BUILD A GREAT WALL ALONG THE SOUTHERN BORDER",
-			"想审计FishBot？去https://github.com/Salted-fish0w0/CtfBot看看吧"
+			"想审计FishBot？去https://github.com/Salted-fish0w0/CtfBot看看吧",
+			"java.lang.NullPointerException: null"
 	};
 	private static final Random random = new Random();
 

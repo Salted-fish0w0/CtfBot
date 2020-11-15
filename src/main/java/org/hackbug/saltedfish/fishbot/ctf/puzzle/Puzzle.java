@@ -9,6 +9,7 @@ import org.hackbug.saltedfish.fishbot.ctf.util.ScriptHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -18,12 +19,13 @@ public class Puzzle {
 	private final String description;
 	private final File fileToArchive;
 	private final File initializeScriptFile;
+	private final File postInitializeScriptFile;
 	private final String userRequiredFileName;
 	private final File userFileModificationScriptFile;
 	private final boolean useDocker;
 	private final String dockerImage;
 
-	public Puzzle(String title, String type, String description, String fileToArchive, String initializeScriptFile, String userRequiredFileName, String userFileModificationScriptFile, boolean useDocker, String dockerImage) throws FileNotFoundException {
+	public Puzzle(String title, String type, String description, String fileToArchive, String initializeScriptFile, String postInitializeScriptFile, String userRequiredFileName, String userFileModificationScriptFile, boolean useDocker, String dockerImage) throws FileNotFoundException {
 		this.title = title;
 		this.type = type;
 		this.description = description;
@@ -52,6 +54,14 @@ public class Puzzle {
 			}
 		} else {
 			this.initializeScriptFile = null;
+		}
+		if (postInitializeScriptFile != null) {
+			this.postInitializeScriptFile = new File(postInitializeScriptFile);
+			if (!this.postInitializeScriptFile.exists()) {
+				throw new FileNotFoundException(postInitializeScriptFile);
+			}
+		} else {
+			this.postInitializeScriptFile = null;
 		}
 
 		if (useDocker) {
@@ -99,37 +109,36 @@ public class Puzzle {
 		String flag = FlagHelper.generateRandomFlag();
 		BotHolder.getMysql().putFlag(who, flag);
 
-		if (fileToArchive != null) {
-			File archive = new File(who.getQq() + "_" + getTitle() + ".tar");
-			ArchiveHelper.buildTar(fileToArchive, archive);
-
+		if (useDocker) {
 			DockerManager dm = BotHolder.getDocker();
-			String dockerName = null;
-			if (useDocker) {
-				dockerName = dm.buildContainer(dockerImage, port);
-				dm.startContainer(dockerName);
-				BotHolder.getMysql().putContainer(dockerName, this.title, who.getId());
+			String dockerName;
+			dockerName = dm.buildContainer(dockerImage, port);
+			dm.startContainer(dockerName);
+			BotHolder.getMysql().putContainer(dockerName, this.title, who.getId());
+			if (fileToArchive != null) {
+				File archive = new File(who.getQq() + "_" + getTitle() + ".tar");
+				ArchiveHelper.buildTar(fileToArchive, archive);
 				dm.uploadArchive(dockerName, archive);
+				archive.delete();
 			}
 
 			if (initializeScriptFile != null) {
 				String name = who.getQq() + initializeScriptFile.getName();
 				// assuming all of the script file is modifiable.
 				File scriptArchive = new File(who.getQq() + "_initScript.tar");
-				File tempScriptFile = new File(name);
-				if (!tempScriptFile.exists()) {
-					tempScriptFile.createNewFile();
-				}
-				ScriptHelper.convertScript(initializeScriptFile, tempScriptFile, port, flag);
-				ArchiveHelper.buildTar(tempScriptFile, scriptArchive);
-				if (useDocker) {
-					dm.uploadArchive(dockerName, scriptArchive);
-					dm.executeCommand(dockerName, "/" + name + "/" + name);
-				}
-				tempScriptFile.delete();
-				scriptArchive.delete();
+				executeScriptOnDocker(port, flag, dm, dockerName, name, scriptArchive, initializeScriptFile);
 			}
-			archive.delete();
+
+			// Ok I think we need to restart the docker to apply our configuration.
+			dm.stopContainer(dockerName);
+			dm.startContainer(dockerName);
+
+			if (postInitializeScriptFile != null) {
+				String name = who.getQq() + postInitializeScriptFile.getName();
+				// assuming all of the script file is modifiable.
+				File scriptArchive = new File(who.getQq() + "_postInitScript.tar");
+				executeScriptOnDocker(port, flag, dm, dockerName, name, scriptArchive, postInitializeScriptFile);
+			}
 		}
 
 		if (userFileModificationScriptFile != null) {
@@ -153,7 +162,24 @@ public class Puzzle {
 		}
 	}
 
+	private void executeScriptOnDocker(int port, String flag, DockerManager dm, String dockerName, String name, File scriptArchive, File postInitializeScriptFile) throws IOException {
+		File tempScriptFile = new File(name);
+		if (!tempScriptFile.exists()) {
+			tempScriptFile.createNewFile();
+		}
+		ScriptHelper.convertScript(postInitializeScriptFile, tempScriptFile, port, flag);
+		ArchiveHelper.buildTar(tempScriptFile, scriptArchive);
+		dm.uploadArchive(dockerName, scriptArchive);
+		dm.executeCommand(dockerName, "/" + name + "/" + name);
+		tempScriptFile.delete();
+		scriptArchive.delete();
+	}
+
 	public String getType() {
 		return type;
+	}
+
+	public File getPostInitializeScriptFile() {
+		return postInitializeScriptFile;
 	}
 }

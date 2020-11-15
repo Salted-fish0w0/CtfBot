@@ -48,6 +48,9 @@ public class CreatePuzzleCommand implements CommandBase {
 			acceptsAll(asList("image", "img"))
 					.withRequiredArg()
 					.ofType(String.class);
+			acceptsAll(asList("templatePostScript"))
+					.withRequiredArg()
+					.ofType(String.class);
 		}
 	};
 
@@ -62,7 +65,7 @@ public class CreatePuzzleCommand implements CommandBase {
 		try {
 			options = parser.parse(args);
 		} catch (OptionException e) {
-			messageCallback.accept(MessageChainHelper.asMessageChain("命令用法错误，用法：/create_puzzle -name <名字> -type <类型> [-description <描述>] [-templateFile <服务器的模板文件> [-templateScript <服务器的初始化脚本>]] [-userFile <用户文件> [-userScript <用户文件初始化脚本>]] [-docker <true|false> -image <镜像文件>]"));
+			messageCallback.accept(MessageChainHelper.asMessageChain("命令用法错误，用法：/create_puzzle -name <名字> -type <类型> [-description <描述>] [-templateFile <服务器的模板文件>] [-templateScript <服务器的初始化脚本>] [-templatePostScript <服务器初始化后执行的脚本>] [-userFile <用户文件> [-userScript <用户文件初始化脚本>]] [-docker <true|false> -image <镜像文件>]"));
 			return;
 		}
 
@@ -71,7 +74,7 @@ public class CreatePuzzleCommand implements CommandBase {
 				messageCallback.accept(MessageChainHelper.asMessageChain("名字为" + options.valueOf("name") + "的题目已经存在了 >_> 考虑换个名字吧"));
 			}
 
-			BotHolder.getMysql().putPuzzle(new Puzzle(options.valueOf("name").toString(), options.valueOf("type").toString(), options.valueOf("description").toString(), (String) options.valueOf("templateFile"), (String) options.valueOf("templateScript"), (String) options.valueOf("userFile"), (String) options.valueOf("userScript"), (Boolean) options.valueOf("docker"), (String) options.valueOf("image")));
+			BotHolder.getMysql().putPuzzle(new Puzzle(options.valueOf("name").toString(), options.valueOf("type").toString(), options.valueOf("description").toString(), (String) options.valueOf("templateFile"), (String) options.valueOf("templateScript"), (String) options.valueOf("templatePostScript"), (String) options.valueOf("userFile"), (String) options.valueOf("userScript"), (Boolean) options.valueOf("docker"), (String) options.valueOf("image")));
 			messageCallback.accept(MessageChainHelper.asMessageChain("题目" + options.valueOf("name") + "创建成功！"));
 		} catch (FileNotFoundException e) {
 			messageCallback.accept(MessageChainHelper.asMessageChain("对不起！文件" + e.getMessage() + "不存在！"));

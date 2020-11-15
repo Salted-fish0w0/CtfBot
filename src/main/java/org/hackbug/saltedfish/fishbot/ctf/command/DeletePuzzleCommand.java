@@ -16,7 +16,7 @@ import static java.util.Arrays.asList;
 public class DeletePuzzleCommand implements CommandBase {
 	private static final OptionParser parser = new OptionParser() {
 		{
-			acceptsAll(asList("name", "n"))
+			acceptsAll(asList("title", "t"))
 					.withRequiredArg()
 					.required()
 					.ofType(String.class);
